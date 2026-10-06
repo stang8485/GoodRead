@@ -39,7 +39,7 @@ return new class extends Migration
         // ระบบเหรียญ
         $table->integer('coin_balance')->default(0);
 
-        // ระบบรูปภาพ (Jetstream มักใช้คอลัมน์นี้เก็บพาธรูป)
+        // ระบบรูปภาพ 
         $table->string('profile_photo_path', 2048)->nullable();
 
         $table->rememberToken();

@@ -37,6 +37,7 @@ class User extends Authenticatable
     'phone_number',
     'role_id',
     'coin_balance',
+    'profile_photo_path',
     ];
 
     public function role() {

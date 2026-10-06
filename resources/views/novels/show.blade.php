@@ -222,23 +222,57 @@
                             @php
                                 $isPurchased = auth()->check() && auth()->user()->hasPurchased($chapter->id);
                                 $isFree = $chapter->chapter_number <= 3 || $chapter->is_free;
+                                $canManage = auth()->check() && (auth()->id() == $novel->author_id || auth()->user()->role_id <= 2);
                             @endphp
                             <div class="flex justify-between items-center py-4 hover:bg-orange-50/40 px-3 rounded-xl transition duration-150 group">
-                                <div class="flex items-center space-x-4 flex-grow">
-                                    <span class="text-slate-400 font-mono w-8 text-center text-sm font-bold group-hover:text-orange-500 transition-colors">{{ $chapter->chapter_number }}</span>
-                                    <a href="{{ route('chapters.show', ['novel' => $novel->id, 'chapter' => $chapter->id]) }}" class="text-slate-800 group-hover:text-orange-600 text-sm font-medium transition-colors">
+                                {{-- หมายเลขตอนและชื่อตอน --}}
+                                <div class="flex items-center space-x-4 flex-grow min-w-0 pr-4">
+                                    <span class="text-slate-400 font-mono w-8 text-center text-sm font-bold group-hover:text-orange-500 transition-colors flex-shrink-0">
+                                        {{ $chapter->chapter_number }}
+                                    </span>
+                                    <a href="{{ route('chapters.show', ['novel' => $novel->id, 'chapter' => $chapter->id]) }}" class="text-slate-800 group-hover:text-orange-600 text-sm font-medium transition-colors truncate">
                                         {{ $chapter->title }}
                                     </a>
                                 </div>
-                                <div class="flex items-center space-x-3">
+
+                                {{-- สถานะราคา และปุ่มจัดการ --}}
+                                <div class="flex items-center space-x-3 flex-shrink-0">
+                                    {{-- ป้ายราคา/ฟรี/ซื้อแล้ว --}}
                                     @if($isFree)
-                                        <span class="text-emerald-700 text-[11px] font-bold bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">อ่านฟรี</span>
+                                        <span class="text-emerald-700 text-[11px] font-bold bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+                                            อ่านฟรี
+                                        </span>
                                     @elseif($isPurchased)
-                                        <span class="text-blue-700 text-[11px] font-bold bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">ซื้อแล้ว</span>
+                                        <span class="text-blue-700 text-[11px] font-bold bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
+                                            ซื้อแล้ว
+                                        </span>
                                     @else
                                         <span class="text-amber-800 text-xs font-bold bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200 flex items-center gap-1">
                                             🔒 {{ $chapter->price }} เหรียญ
                                         </span>
+                                    @endif
+
+                                    {{-- ปุ่มแก้ไข/ลบตอน (แสดงเฉพาะเจ้าของนิยาย หรือ Admin) --}}
+                                    @if($canManage)
+                                        <div class="flex items-center gap-1.5 pl-2 border-l border-slate-200">
+                                            {{-- ปุ่มแก้ไข --}}
+                                            <a href="{{ route('chapters.edit', ['novel' => $novel->id, 'chapter' => $chapter->id]) }}" 
+                                            class="text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold px-2 py-1 rounded-lg border border-amber-200 transition">
+                                                แก้ไข
+                                            </a>
+
+                                            {{-- ปุ่มลบตอน --}}
+                                            <form action="{{ route('chapters.destroy', ['novel' => $novel->id, 'chapter' => $chapter->id]) }}" 
+                                                method="POST" 
+                                                onsubmit="return confirm('ยืนยันการลบตอนที่ {{ $chapter->chapter_number }} หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้');" 
+                                                class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold px-2 py-1 rounded-lg border border-rose-200 transition">
+                                                    ลบ
+                                                </button>
+                                            </form>
+                                        </div>
                                     @endif
                                 </div>
                             </div>
@@ -344,7 +378,7 @@
 
         </div>
 
-        {{-- 4. MODAL POPUP รีวิว (Alpine.js) --}}
+        {{-- 4. MODAL POPUP รีวิว  --}}
         <div x-show="openReviewModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
                 <div x-show="openReviewModal" 
