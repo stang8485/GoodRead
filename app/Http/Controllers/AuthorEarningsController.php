@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\ChapterPurchase;
-use App\Models\Novel; // เพิ่ม Model Novel
+use App\Models\Novel; 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\File;
 
 class AuthorEarningsController extends Controller
 {
@@ -14,7 +16,7 @@ class AuthorEarningsController extends Controller
     {
         $authorId = $request->user()->id;
 
-        // 1. รับค่าฟิลเตอร์จาก Request
+        // รับค่าจาก Request
         $date = $request->input('date');
         $month = $request->input('month');
         $novelId = $request->input('novel_id');
@@ -23,21 +25,21 @@ class AuthorEarningsController extends Controller
         $from = $request->input('from', now()->subDays(29)->toDateString());
         $to = $request->input('to', now()->toDateString());
 
-        // 2. ดึงรายชื่อนิยายของนักเขียนคนนี้ทั้งหมด สำหรับใช้ทำ Dropdown ในหน้า View
+        //  ดึงรายชื่อนิยายของนักเขียนคนนี้ทั้งหมด สำหรับใช้ทำ Dropdown ในหน้า View
         $novels = Novel::where('author_id', $authorId)->select('id', 'title')->get();
 
-        // 3. เริ่มต้นสร้าง Query
+        //  สร้าง Query
         $query = ChapterPurchase::query()
             ->join('chapters', 'chapter_purchases.chapter_id', '=', 'chapters.id')
             ->join('novels', 'chapters.novel_id', '=', 'novels.id')
             ->where('novels.author_id', $authorId); // บังคับสิทธิ์ให้ดูได้แค่ของตัวเองเท่านั้น
 
-        // 4. เงื่อนไขกรองตามชื่อนิยาย
+        //  เงื่อนไขกรองตามชื่อนิยาย
         if ($novelId) {
             $query->where('novels.id', $novelId);
         }
 
-        // 5. เงื่อนไขกรองตาม วัน / เดือน / ช่วงเวลา
+        //  เงื่อนไขกรองตาม วัน / เดือน / ช่วงเวลา
         if ($date) {
             $query->whereDate('chapter_purchases.created_at', $date);
             $from = $date;
@@ -55,14 +57,28 @@ class AuthorEarningsController extends Controller
                   ->whereDate('chapter_purchases.created_at', '<=', $to);
         }
 
-        // 6. ดึงข้อมูลและจัดกลุ่ม
-        $earnings = $query->selectRaw('DATE(chapter_purchases.created_at) as earned_on, novels.id as novel_id, novels.title as novel_title, SUM(chapter_purchases.price_paid) as coins')
-            ->groupBy('earned_on', 'novels.id', 'novels.title')
-            ->orderByDesc('earned_on')
+        // ดึงข้อมูลและจัดกลุ่ม
+        $earnings = $query->selectRaw('DATE(chapter_purchases.created_at) as earned_on, novels.id as novel_id, novels.title as novel_title, chapter_purchases.price_paid as coins, chapter_purchases.created_at')
+            ->orderByDesc('chapter_purchases.created_at')
             ->orderBy('novels.title')
             ->get();
 
         $dailyTotals = $earnings->groupBy('earned_on')->map(fn ($rows) => $rows->sum('coins'));
+
+        if ($request->export === 'pdf') {
+            $fontPath = storage_path('fonts');
+            if (!File::exists($fontPath)) {
+                File::makeDirectory($fontPath, 0777, true);
+            }
+            $pdf = Pdf::setOptions([
+                'fontDir' => storage_path('fonts'),     // บังคับให้เก็บไฟล์ฟอนต์ที่นี่
+                'fontCache' => storage_path('fonts'),   // บังคับให้เก็บแคชที่นี่
+                'chroot' => public_path(),              // อนุญาตให้ระบบอ่านไฟล์ในโฟลเดอร์ public (สำคัญมากสำหรับการโหลดฟอนต์)
+                'isRemoteEnabled' => true               // อนุญาตให้โหลดไฟล์ภายนอกได้ (เผื่อมีรูปภาพ)
+            ])->loadView('author.earnings_pdf', compact('earnings', 'dailyTotals'));
+            
+            return $pdf->stream('earnings_report.pdf');
+        }
 
         // ส่งข้อมูลไปยัง View
         return view('author.earnings.index', compact(

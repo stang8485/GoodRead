@@ -10,19 +10,19 @@ class ChapterPurchase extends Model
     protected $fillable = [
         'user_id', 
         'chapter_id', 
-        'price_paid' // บันทึกราคา ณ วันที่ซื้อ
+        'price_paid' 
     ];
 
     // เชื่อมโยงกับผู้ซื้อ
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     // เชื่อมโยงกับตอนที่ซื้อ
     public function chapter()
     {
-        return $this->belongsTo(Chapter::class);
+        return $this->belongsTo(Chapter::class)->withTrashed();
     }
 
     public function transaction()

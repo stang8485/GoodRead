@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Novel extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
     // กำหนดฟิลด์ที่อนุญาตให้บันทึกข้อมูลได้
     protected $fillable = [
@@ -35,7 +37,7 @@ class Novel extends Model
      */
     public function author(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'author_id');
+        return $this->belongsTo(User::class, 'author_id')->withTrashed();
     }
 
     /**

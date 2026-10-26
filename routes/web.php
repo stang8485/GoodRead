@@ -51,7 +51,7 @@ use App\Http\Controllers\AuthorEarningsController;
     Route::put('novels/{novel}/chapters/{chapter}', [ChapterController::class, 'update'])->name('chapters.update');
     Route::delete('novels/{novel}/chapters/{chapter}', [ChapterController::class, 'destroy'])->name('chapters.destroy');
 
-    // หน้าเลือกจำนวนเหรียญ (Packages)
+    // หน้าเลือกจำนวนเหรียญ 
     Route::get('/topup', [HomeController::class, 'show'])->name('topup.index');
     // หน้าโอนเงินและอัปโหลดสลิป 
     Route::get('/topup/payment', [HomeController::class, 'payment'])->name('topup.payment');
@@ -62,6 +62,8 @@ use App\Http\Controllers\AuthorEarningsController;
     //ซื้อตอน
     Route::post('/chapters/{chapter}/purchase', [ChapterController::class, 'purchase'])->name('purchase.chapter');
     Route::get('/author/earnings', [AuthorEarningsController::class, 'index'])->name('author.earnings');
+
+    Route::get('/coin-reports/export-pdf', [CoinReportController::class, 'exportPdf'])->name('coin-reports.export-pdf');
     });
 
     // หน้าแรกสำหรับทุกคน (Guest & User)

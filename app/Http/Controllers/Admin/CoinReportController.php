@@ -6,31 +6,33 @@ use App\Http\Controllers\Controller;
 use App\Models\ChapterPurchase;
 use App\Models\CoinTopup;
 use App\Models\CoinTransaction;
-use App\Models\Novel; // ต้องเพิ่ม Model Novel สำหรับดึงรายชื่อนิยาย
+use App\Models\Novel; 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\File;
 
 class CoinReportController extends Controller
 {
     public function index(Request $request)
     {
-        // 1. รับค่าจากฟอร์ม (วัน, เดือน, สัปดาห์, ไอดีนิยาย)
+        // รับค่าจากฟอร์ม 
         $date = $request->input('date');
         $month = $request->input('month');
         $week = $request->input('week');
         $novelId = $request->input('novel_id');
 
-        // 2. ตรวจสอบเงื่อนไขการหาวันเริ่มต้นและสิ้นสุด
+        // ตรวจสอบเงื่อนไขการหาวันเริ่มต้นและสิ้นสุด
         if ($date) {
             // ค้นหาแบบรายวัน
             $start = Carbon::parse($date)->startOfDay();
             $end = Carbon::parse($date)->endOfDay();
         } elseif ($month) {
-            // ค้นหาแบบรายเดือน (YYYY-MM)
+            // ค้นหาแบบรายเดือน 
             $start = Carbon::parse($month)->startOfMonth();
             $end = Carbon::parse($month)->endOfMonth();
         } else {
-            // ค้นหาแบบรายสัปดาห์ (ค่าเริ่มต้นเดิม)
+            // ค้นหาแบบรายสัปดาห์ 
             $week = $week ?: now()->format('Y-\WW');
             try {
                 $start = Carbon::parse($week)->startOfWeek();
@@ -41,15 +43,15 @@ class CoinReportController extends Controller
             $end = $start->copy()->endOfWeek();
         }
 
-        // 3. คำนวณรหัสสำหรับปุ่มนำทาง (ยังคงไว้เผื่อใช้)
+        // คำนวณรหัสสำหรับปุ่มนำทาง
         $prevWeek = $start->copy()->subWeek()->format('Y-\WW');
         $nextWeek = $start->copy()->addWeek()->format('Y-\WW');
         $currentWeek = now()->format('Y-\WW');
 
-        // 4. ดึงรายชื่อนิยายทั้งหมดสำหรับ Dropdown หน้าแอดมิน
-        $novels = Novel::select('id', 'title')->get();
+        // ดึงรายชื่อนิยายทั้งหมดสำหรับ Dropdown หน้าแอดมิน
+        $novels = Novel::select('id', 'title')->withTrashed()->get();
 
-        // 5. สร้าง Query สำหรับประวัติการซื้อตอน (ใช้สำหรับการซื้อตอนและกรองตามนิยาย)
+        // สร้าง Query สำหรับประวัติการซื้อตอน 
         $purchaseQuery = ChapterPurchase::with(['user', 'chapter.novel'])
             ->whereBetween('created_at', [$start, $end]);
 
@@ -65,8 +67,7 @@ class CoinReportController extends Controller
             ->paginate(20, ['*'], 'purchases')
             ->withQueryString();
 
-        // 6. สร้าง Query สำหรับประวัติการเติมเงิน
-        // (การเติมเงินไม่ได้ผูกกับนิยาย จึงใช้แค่การกรองวันที่)
+        // สร้าง Query สำหรับประวัติการเติมเงิน
         $topupQuery = CoinTopup::whereBetween('created_at', [$start, $end]);
 
         $coinsToppedUp = (clone $topupQuery)->where('status', 'approved')->sum('coins_to_receive');
@@ -78,7 +79,7 @@ class CoinReportController extends Controller
             ->paginate(20, ['*'], 'topups')
             ->withQueryString();
 
-        // 7. ส่งตัวแปรทั้งหมดไปที่ View
+        // ส่งตัวแปรทั้งหมดไปที่ View
         return view('admin.coin-reports.index', compact(
             'date',
             'month',
@@ -96,5 +97,68 @@ class CoinReportController extends Controller
             'topups',
             'purchases'
         ));
+    }
+
+    public function exportPdf(Request $request)
+    {
+        // 1. รับค่าและคำนวณช่วงเวลาเหมือนฟังก์ชัน index
+        $date = $request->input('date');
+        $month = $request->input('month');
+        $week = $request->input('week');
+        $novelId = $request->input('novel_id');
+
+        if ($date) {
+            $start = Carbon::parse($date)->startOfDay();
+            $end = Carbon::parse($date)->endOfDay();
+        } elseif ($month) {
+            $start = Carbon::parse($month)->startOfMonth();
+            $end = Carbon::parse($month)->endOfMonth();
+        } else {
+            $week = $week ?: now()->format('Y-\WW');
+            try {
+                $start = Carbon::parse($week)->startOfWeek();
+            } catch (\Throwable $e) {
+                $start = now()->startOfWeek();
+            }
+            $end = $start->copy()->endOfWeek();
+        }
+
+        // 2. ดึงข้อมูลการซื้อตอน (ใช้ get() แทน paginate())
+        $purchaseQuery = ChapterPurchase::with(['user', 'chapter.novel'])
+            ->whereBetween('created_at', [$start, $end]);
+
+        if ($novelId) {
+            $purchaseQuery->whereHas('chapter', function ($query) use ($novelId) {
+                $query->where('novel_id', $novelId);
+            });
+        }
+
+        $coinsSpent = (clone $purchaseQuery)->sum('price_paid');
+        $purchases = (clone $purchaseQuery)->latest()->get(); // เปลี่ยนเป็น get()
+
+        // 3. ดึงข้อมูลการเติมเงิน (ใช้ get() แทน paginate())
+        $topupQuery = CoinTopup::whereBetween('created_at', [$start, $end]);
+        
+        $coinsToppedUp = (clone $topupQuery)->where('status', 'approved')->sum('coins_to_receive');
+        $approvedTopupMoney = (clone $topupQuery)->where('status', 'approved')->sum('amount');
+        
+        $topups = CoinTopup::with(['user', 'admin'])
+            ->whereBetween('created_at', [$start, $end])
+            ->latest()
+            ->get(); // เปลี่ยนเป็น get()
+
+        // 4. ส่งข้อมูลไปยัง View PDF (สร้างไฟล์ resources/views/admin/coin-reports/pdf.blade.php)
+        $pdf = Pdf::loadView('admin.coin-reports.pdf', compact(
+            'start',
+            'end',
+            'coinsSpent',
+            'coinsToppedUp',
+            'approvedTopupMoney',
+            'topups',
+            'purchases'
+        ));
+
+        // 5. แสดงไฟล์ PDF
+        return $pdf->stream('coin-report.pdf');
     }
 }

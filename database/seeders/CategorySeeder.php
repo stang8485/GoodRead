@@ -10,7 +10,6 @@ class CategorySeeder extends Seeder
 {
     public function run(): void
     {
-        // slug กำหนดตายตัวเพื่อให้ seed ซ้ำได้ และ URL ไม่เปลี่ยนตามการแสดงชื่อภาษาไทย
         $categories = [
             ['name' => 'Y-Yaoi', 'slug' => 'y-yaoi'],
             ['name' => 'จีน-กำลังภายใน-เทพเซียน', 'slug' => 'chinese-wuxia-xianxia'],

@@ -138,7 +138,7 @@
                             @endif
 
                             <div class="space-y-1.5 flex-grow">
-                                <label class="block text-xs text-slate-600 font-semibold">อัปโหลดรูปภาพใหม่ (ถ้าต้องการเปลี่ยน)</label>
+                                <label class="block text-xs text-slate-600 font-semibold">อัปโหลดรูปภาพใหม่</label>
                                 <input type="file" name="cover_image" accept="image/*" 
                                        class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100 cursor-pointer">
                                 <p class="text-[11px] text-slate-400">รองรับ PNG, JPG, JPEG ขนาดไม่เกิน 2MB</p>

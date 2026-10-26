@@ -6,30 +6,30 @@
             <!-- ฟอร์มค้นหา -->
             <form method="GET" class="bg-white p-5 rounded-lg shadow-sm flex flex-wrap items-end gap-4">
                 
-                <!-- 1. ค้นหาแบบวันเดียว -->
+                <!-- ค้นหาแบบวันเดียว -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">รายวัน</label>
                     <input type="date" name="date" value="{{ $date ?? '' }}" class="mt-1 block rounded border-gray-300">
                 </div>
 
-                <!-- 2. ค้นหาแบบทั้งเดือน -->
+                <!-- ค้นหาแบบทั้งเดือน -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">รายเดือน</label>
                     <input type="month" name="month" value="{{ $month ?? '' }}" class="mt-1 block rounded border-gray-300">
                 </div>
 
-                <!-- 3. ค้นหาแบบสัปดาห์ (ของเดิม) -->
+                <!--  ค้นหาแบบสัปดาห์ -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">สัปดาห์</label>
                     <input type="week" name="week" value="{{ $week ?? '' }}" class="mt-1 block rounded border-gray-300">
                 </div>
 
-                <!-- 4. ค้นหาตามชื่อนิยาย -->
+                <!--  ค้นหาตามชื่อนิยาย -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">ชื่อนิยาย</label>
                     <select name="novel_id" class="mt-1 block rounded border-gray-300 min-w-[200px]">
                         <option value="">-- นิยายทั้งหมด --</option>
-                        <!-- แก้เว้นวรรคให้ถูกต้องแล้ว -->
+                        
                         @foreach($novels as $novel)
                             <option value="{{ $novel->id }}" {{ ($novelId ?? '') == $novel->id ? 'selected' : '' }}>
                                 {{ $novel->title }}
@@ -41,9 +41,12 @@
                 <!-- ปุ่มดำเนินการ -->
                 <div class="flex gap-2">
                     <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">ดูรายงาน</button>
-                    <!-- ปุ่มสำหรับล้างค่ากลับไปเป็นค่าเริ่มต้น (URL ปัจจุบันแบบไม่มี Query String) -->
+                    <!-- ปุ่มสำหรับล้างค่ากลับไปเป็นค่าเริ่มต้น -->
                     <a href="{{ url()->current() }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 flex items-center">ล้างค่า</a>
                 </div>
+                <a href="{{ route('coin-reports.export-pdf', request()->all()) }}" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center">
+                    พิมพ์ PDF
+                </a>
             </form>
 
             <!-- แสดงช่วงเวลา -->
@@ -57,7 +60,7 @@
                 <div class="bg-white rounded-lg p-6 shadow"><p class="text-gray-500">ยอดเงินโอนที่อนุมัติ</p><p class="text-3xl font-bold text-blue-600">฿{{ number_format($approvedTopupMoney, 2) }}</p></div>
             </div>
 
-            <!-- เพิ่มส่วนตารางประวัติกลับเข้าไป (ของเดิมถูกตัดขาดไป) -->
+            <!-- เพิ่มส่วนตารางประวัติกลับเข้าไป -->
             <section class="bg-white p-6 rounded-lg shadow overflow-x-auto"><h3 class="font-bold text-lg mb-4">ประวัติการโอนเงินซื้อเหรียญ</h3>
                 <table class="min-w-full text-sm"><thead class="bg-gray-50"><tr><th class="p-3 text-left">วันเวลา</th><th class="p-3 text-left">ผู้โอน</th><th class="p-3 text-right">บาท</th><th class="p-3 text-right">เหรียญ</th><th class="p-3 text-left">สถานะ</th><th class="p-3 text-left">ผู้ตรวจ</th></tr></thead><tbody>
                 @forelse($topups as $topup)<tr class="border-t"><td class="p-3">{{ $topup->created_at->format('d/m/Y H:i') }}</td><td class="p-3">{{ $topup->user->username }}</td><td class="p-3 text-right">฿{{ number_format($topup->amount, 2) }}</td><td class="p-3 text-right">{{ number_format($topup->coins_to_receive) }}</td><td class="p-3">{{ ['pending'=>'รอตรวจ','approved'=>'อนุมัติ','rejected'=>'ปฏิเสธ'][$topup->status] }}</td><td class="p-3">{{ $topup->admin?->username ?? '-' }}</td></tr>@empty<tr><td colspan="6" class="p-5 text-center text-gray-500">ไม่มีรายการ</td></tr>@endforelse

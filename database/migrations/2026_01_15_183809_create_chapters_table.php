@@ -24,7 +24,7 @@ return new class extends Migration
         $table->integer('price')->default(0); 
         $table->boolean('is_free')->default(false); // 3 ตอนแรกให้ตั้งเป็น true
         
-        // ระบบสถานะและการตั้งเวลา (เงื่อนไขข้อ 10, 11)
+        // ระบบสถานะและการตั้งเวลา 
         $table->enum('status', ['draft', 'published', 'scheduled'])->default('draft');
         $table->timestamp('scheduled_at')->nullable(); // วันที่ลงนิยายล่วงหน้า
         
@@ -32,6 +32,7 @@ return new class extends Migration
         $table->unsignedBigInteger('view_count')->default(0);
         
         $table->timestamps();
+        $table->softDeletes();
     });
 }
 

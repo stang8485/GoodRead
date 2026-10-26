@@ -6,10 +6,9 @@
     <div class="py-10 bg-gray-100 min-h-screen">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
             
-            <!-- ฟอร์มค้นหาที่ปรับปรุงใหม่ -->
             <form method="GET" action="{{ route('author.earnings') }}" class="bg-white p-5 rounded-lg shadow-sm flex flex-wrap items-end gap-4">
                 
-                <!-- ช่วงเวลา (แบบเดิม) -->
+                <!-- ช่วงเวลา  -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">ตั้งแต่</label>
                     <input type="date" name="from" value="{{ $from }}" class="mt-1 block rounded border-gray-300 sm:text-sm">
@@ -21,13 +20,13 @@
 
                 <!-- ค้นหาแบบรายวัน -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700"> รายวัน</label>
+                    <label class="block text-sm font-medium text-gray-700"> เลือกวัน</label>
                     <input type="date" name="date" value="{{ $date ?? '' }}" class="mt-1 block rounded border-gray-300 sm:text-sm">
                 </div>
 
                 <!-- ค้นหาแบบรายเดือน -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700"> รายเดือน</label>
+                    <label class="block text-sm font-medium text-gray-700"> เลือกเดือน</label>
                     <input type="month" name="month" value="{{ $month ?? '' }}" class="mt-1 block rounded border-gray-300 sm:text-sm">
                 </div>
 
@@ -54,6 +53,10 @@
                     <a href="{{ route('author.earnings') }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
                         ล้างค่า
                     </a>
+                    <button type="submit" name="export" value="pdf" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        พิมพ์ PDF
+                    </button>
                 </div>
             </form>
 
